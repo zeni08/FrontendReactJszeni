@@ -1,0 +1,59 @@
+body {
+    background-color: #f4f6f9;
+}
+/* --- ATURAN KHUSUS SAAT PRINT / DOWNLOAD PDF --- */
+@media print {
+    /* 1. HAPUS Header/Footer Bawaan Browser (Judul 'frontend', Tanggal, URL) */
+    @page {
+        margin: 0; /* Ini kuncinya! Margin 0 memotong teks bawaan browser */
+        size: auto; 
+    }
+
+    /* 2. Beri Jarak Aman di Kertas (Supaya konten tidak mepet pinggir) */
+    body {
+        margin: 1.5cm !important; /* Jarak kertas atas-bawah-kiri-kanan */
+    }
+
+    /* 3. Sembunyikan Elemen yang Tidak Perlu */
+    .bg-white.border-end, /* Sidebar */
+    button, .btn, .nav-link, /* Tombol & Menu */
+    head, title {
+        display: none !important;
+    }
+
+    /* 4. Atur Lebar Halaman Penuh */
+    .flex-grow-1 {
+        margin: 0 !important;
+        padding: 0 !important;
+        width: 100% !important;
+    }
+
+    /* 5. Pastikan Background Putih Bersih */
+    body, .d-flex {
+        background-color: white !important;
+        height: auto !important;
+        min-height: 0 !important;
+    }
+
+    /* 6. Hapus Garis & Bayangan Kartu */
+    .card {
+        border: none !important;
+        box-shadow: none !important;
+    }
+    
+    /* 7. Munculkan Logo Suzuki (Hanya saat Print) */
+    .d-print-block {
+        display: block !important;
+        margin-bottom: 20px;
+        text-align: center;
+    }
+
+    /* Rapikan Judul */
+    h3 {
+        text-align: center;
+        font-size: 24px;
+        color: black !important;
+        margin-bottom: 30px;
+        text-decoration: underline;
+    }
+}
