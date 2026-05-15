@@ -66,7 +66,7 @@ const Schedule = () => {
 
     const refreshData = async () => {
         try { 
-            const res = await axios.get('http://127.0.0.1:8000/api/schedule/'); 
+            const res = await axios.get('hhttps://zeni08.pythonanywhere.comapi/schedule/'); 
             const sorted = res.data.sort((a, b) => (a.status === 'SCHEDULED' ? -1 : 1));
             setSchedules(sorted); 
         } catch (error) { console.error(error); }
@@ -74,8 +74,8 @@ const Schedule = () => {
 
     const getDropdownData = async () => {
         try {
-            const resVendor = await axios.get('http://127.0.0.1:8000/api/vendors/');
-            const resPart = await axios.get('http://127.0.0.1:8000/api/parts/');
+            const resVendor = await axios.get('https://zeni08.pythonanywhere.com/api/vendors/');
+            const resPart = await axios.get('https://zeni08.pythonanywhere.com/api/parts/');
             setVendors(resVendor.data); 
             setParts(resPart.data);
         } catch (error) { console.error(error); }
@@ -111,7 +111,7 @@ const Schedule = () => {
         };
 
         try {
-            await axios.post('http://127.0.0.1:8000/api/schedule/', payload);
+            await axios.post('https://zeni08.pythonanywhere.com/api/schedule/', payload);
             alert("✅ Jadwal Berhasil Disimpan!"); 
             setShowInput(false); 
             refreshData(); 
@@ -126,7 +126,7 @@ const Schedule = () => {
     const handleDelete = async (e, id) => {
         e.stopPropagation();
         if (window.confirm("Hapus Jadwal?")) {
-            try { await axios.delete(`http://127.0.0.1:8000/api/schedule/${id}/`); refreshData(); } catch (e) { alert("Gagal Hapus"); }
+            try { await axios.delete(`https://zeni08.pythonanywhere.com/api/schedule/${id}/`); refreshData(); } catch (e) { alert("Gagal Hapus"); }
         }
     };
 

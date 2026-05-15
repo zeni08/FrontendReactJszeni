@@ -8,7 +8,7 @@ const InspectionList = () => {
     // 1. AMBIL DATA DARI API
     const fetchInspections = async () => {
         try {
-            const response = await axios.get('http://localhost:8000/api/inspections/');
+            const response = await axios.get('https://zeni08.pythonanywhere.com/api/inspections/');
             setInspections(response.data);
         } catch (error) {
             console.error("Gagal ambil data:", error);

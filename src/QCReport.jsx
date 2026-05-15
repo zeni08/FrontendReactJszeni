@@ -41,7 +41,7 @@ const QCReport = () => {
 
     const fetchData = async () => {
         try {
-            const res = await axios.get('http://127.0.0.1:8000/api/inspections/');
+            const res = await axios.get('https://zeni08.pythonanywhere.com/api/inspections/');
             const sorted = res.data.sort((a, b) => b.id - a.id);
             setInspections(sorted);
             setFilteredData(sorted);
@@ -170,7 +170,7 @@ const QCReport = () => {
         if (!path) return null;
         
         // URL Backend Django
-        const baseUrl = "http://127.0.0.1:8000";
+        const baseUrl = "https://zeni08.pythonanywhere.com";
         
         // Proteksi jika path sudah mengandung http
         if (path.startsWith('http')) return `${path}?t=${new Date().getTime()}`;

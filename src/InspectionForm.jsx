@@ -39,7 +39,7 @@ const InspectionForm = () => {
     const fetchSchedule = async () => {
         try {
             // Ambil data jadwal receiving berdasarkan ID
-            const res = await axios.get(`http://127.0.0.1:8000/api/schedule/${id}/`);
+            const res = await axios.get(`https://zeni08.pythonanywhere.com/api/schedule/${id}/`);
             setSchedule(res.data);
             // Isi default Qty OK dengan Plan Qty & Batch Number
             setFormData(prev => ({ 
@@ -106,22 +106,22 @@ const InspectionForm = () => {
 
         try {
             // 1. SIMPAN HASIL QC KE DATABASE SUZUKI
-            await axios.post('http://127.0.0.1:8000/api/inspections/', sendData, {
+            await axios.post('https://zeni08.pythonanywhere.com/api/inspections/', sendData, {
                 headers: { 'Content-Type': 'multipart/form-data' }
             });
 
             // 2. UPDATE BATCH NUMBER & STATUS JADWAL
-            await axios.patch(`http://127.0.0.1:8000/api/schedule/${id}/`, {
+            await axios.patch(`https://zeni08.pythonanywhere.com/api/schedule/${id}/`, {
                 batch_number: formData.batch_number,
                 status: 'COMPLETED'
             });
 
             // 3. UPDATE STOK PART (Hanya jika ada barang OK)
             if (formData.qty_ok > 0) {
-                const partRes = await axios.get(`http://127.0.0.1:8000/api/parts/${schedule.part}/`);
+                const partRes = await axios.get(`https://zeni08.pythonanywhere.com/api/parts/${schedule.part}/`);
                 const currentStock = partRes.data.current_stock;
                 
-                await axios.patch(`http://127.0.0.1:8000/api/parts/${schedule.part}/`, {
+                await axios.patch(`https://zeni08.pythonanywhere.com/api/parts/${schedule.part}/`, {
                     current_stock: currentStock + parseInt(formData.qty_ok)
                 });
             }

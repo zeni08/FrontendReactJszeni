@@ -72,8 +72,8 @@ const Production = () => {
 
     const fetchData = async () => {
         try {
-            const resReq = await axios.get('http://127.0.0.1:8000/api/production/');
-            const resPart = await axios.get('http://127.0.0.1:8000/api/parts/');
+            const resReq = await axios.get('https://zeni08.pythonanywhere.com/api/production/');
+            const resPart = await axios.get('hhttps://zeni08.pythonanywhere.com/api/parts/');
             
             // Sort data terbaru di atas
             setRequests(resReq.data.sort((a, b) => b.id - a.id));
@@ -86,7 +86,7 @@ const Production = () => {
         if (window.confirm(`Yakin ingin ${newStatus === 'APPROVED' ? 'MENYETUJUI' : 'MENOLAK'} permintaan ini?`)) {
             try {
                 // 1. Update Status ke Database
-                await axios.patch(`http://127.0.0.1:8000/api/production/${item.id}/`, { 
+                await axios.patch(`https://zeni08.pythonanywhere.com/api/production/${item.id}/`, { 
                     status: newStatus 
                 });
 
@@ -95,7 +95,7 @@ const Production = () => {
                     const partData = parts.find(p => p.id === item.part);
                     if (partData) {
                         const sisaStok = partData.current_stock - item.qty_request;
-                        await axios.patch(`http://127.0.0.1:8000/api/parts/${item.part}/`, { 
+                        await axios.patch(`https://zeni08.pythonanywhere.com/api/parts/${item.part}/`, { 
                             current_stock: sisaStok 
                         });
                     }
@@ -249,7 +249,7 @@ const Production = () => {
 
         try {
             // KIRIM REQUEST DENGAN STATUS PENDING
-            await axios.post('http://127.0.0.1:8000/api/production/', { ...formData, status: 'PENDING' });
+            await axios.post('https://zeni08.pythonanywhere.com/api/production/', { ...formData, status: 'PENDING' });
             
             alert("✅ Permintaan Berhasil Diajukan! Menunggu Approval Admin/Manager.");
             setShowAdd(false);
@@ -272,7 +272,7 @@ const Production = () => {
     const handleDelete = async (item) => {
         if (window.confirm("Hapus history ini? (Stok TIDAK akan kembali otomatis)")) {
             try {
-                await axios.delete(`http://127.0.0.1:8000/api/production/${item.id}/`);
+                await axios.delete(`https://zeni08.pythonanywhere.com/api/production/${item.id}/`);
                 fetchData();
             } catch (error) { alert("Gagal Menghapus"); }
         }

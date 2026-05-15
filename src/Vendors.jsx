@@ -31,7 +31,7 @@ const Vendors = () => {
 
     const fetchVendors = async () => {
         try {
-            const res = await axios.get('http://127.0.0.1:8000/api/vendors/');
+            const res = await axios.get('https://zeni08.pythonanywhere.com/api/vendors/');
             setVendors(Array.isArray(res.data) ? res.data : []);
         } catch (error) { setVendors([]); }
     };
@@ -39,8 +39,8 @@ const Vendors = () => {
     const handleSave = async (e) => {
         e.preventDefault();
         try {
-            if (editId) await axios.put(`http://127.0.0.1:8000/api/vendors/${editId}/`, formData);
-            else await axios.post('http://127.0.0.1:8000/api/vendors/', formData);
+            if (editId) await axios.put(`https://zeni08.pythonanywhere.com/api/vendors/${editId}/`, formData);
+            else await axios.post('https://zeni08.pythonanywhere.com/api/vendors/', formData);
             
             alert("✅ Data Vendor Berhasil Disimpan!");
             fetchVendors();
@@ -52,7 +52,7 @@ const Vendors = () => {
 
     const handleDelete = async (id) => {
         if (window.confirm("Yakin hapus vendor ini?")) {
-            try { await axios.delete(`http://127.0.0.1:8000/api/vendors/${id}/`); fetchVendors(); }
+            try { await axios.delete(`https://zeni08.pythonanywhere.com/api/vendors/${id}/`); fetchVendors(); }
             catch (error) { alert("Gagal hapus vendor."); }
         }
     };

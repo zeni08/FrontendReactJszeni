@@ -26,11 +26,11 @@ const RecycleBin = () => {
 
     const fetchDeletedItems = async () => {
         try {
-            const resVendors = await axios.get('http://127.0.0.1:8000/api/vendors/deleted_items/');
-            const resParts = await axios.get('http://127.0.0.1:8000/api/parts/deleted_items/');
-            const resSchedules = await axios.get('http://127.0.0.1:8000/api/schedule/deleted_items/');
+            const resVendors = await axios.get('https://zeni08.pythonanywhere.com/api/vendors/deleted_items/');
+            const resParts = await axios.get('https://zeni08.pythonanywhere.com/api/parts/deleted_items/');
+            const resSchedules = await axios.get('https://zeni08.pythonanywhere.com/api/schedule/deleted_items/');
             // Fetch Production Request terhapus
-            const resProductions = await axios.get('http://127.0.0.1:8000/api/production/deleted_items/'); 
+            const resProductions = await axios.get('https://zeni08.pythonanywhere.com/api/production/deleted_items/'); 
             
             setDeletedVendors(resVendors.data);
             setDeletedParts(resParts.data);
@@ -55,7 +55,7 @@ const RecycleBin = () => {
 
     if (result.isConfirmed) {
         try {
-            await axios.post(`http://127.0.0.1:8000/api/${type}/${id}/restore/`);
+            await axios.post(`https://zeni08.pythonanywhere.com/api/${type}/${id}/restore/`);
             
             Swal.fire({
                 title: 'Berhasil!',

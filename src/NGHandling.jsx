@@ -27,7 +27,7 @@ const NGHandling = () => {
 
     const fetchNGData = async () => {
         try {
-            const res = await axios.get('http://127.0.0.1:8000/api/inspections/');
+            const res = await axios.get('https://zeni08.pythonanywhere.com/api/inspections/');
             setNgList(res.data.sort((a, b) => b.id - a.id));
         } catch (error) { console.error("Gagal ambil data:", error); }
     };
@@ -64,7 +64,7 @@ const NGHandling = () => {
         if (photoFile) { formData.append('repair_photo', photoFile); }
 
         try {
-            await axios.post(`http://127.0.0.1:8000/api/inspections/${selectedItem.id}/resolve_ng/`, formData, {
+            await axios.post(`https://zeni08.pythonanywhere.com/api/inspections/${selectedItem.id}/resolve_ng/`, formData, {
                 headers: { 'Content-Type': 'multipart/form-data' }
             });
             alert(`✅ SUKSES! Tindakan dan Foto Berhasil Disimpan.`);
@@ -79,7 +79,7 @@ const NGHandling = () => {
         if (!path) return null;
         if (path.startsWith('http')) return `${path}?t=${new Date().getTime()}`;
         
-        const baseUrl = "http://127.0.0.1:8000";
+        const baseUrl = "https://zeni08.pythonanywhere.com";
         const cleanPath = path.startsWith('/') ? path : `/${path}`;
         return `${baseUrl}${cleanPath}?t=${new Date().getTime()}`;
     };

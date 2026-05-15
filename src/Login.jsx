@@ -16,7 +16,7 @@ const Login = () => {
         setLoading(true);
 
         try {
-            const res = await axios.post('http://127.0.0.1:8000/api/login/', {
+            const res = await axios.post('https://zeni08.pythonanywhere.com/api/login/', {
                 username,
                 password
             });

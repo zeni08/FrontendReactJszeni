@@ -35,8 +35,8 @@ const Parts = () => {
 
     const fetchData = async () => {
         try {
-            const resParts = await axios.get('http://127.0.0.1:8000/api/parts/');
-            const resVendors = await axios.get('http://127.0.0.1:8000/api/vendors/');
+            const resParts = await axios.get('https://zeni08.pythonanywhere.com/api/parts/');
+            const resVendors = await axios.get('https://zeni08.pythonanywhere.com/api/vendors/');
             setParts(Array.isArray(resParts.data) ? resParts.data : []);
             setVendors(Array.isArray(resVendors.data) ? resVendors.data : []);
         } catch (error) { setParts([]); setVendors([]); }
@@ -64,7 +64,7 @@ const Parts = () => {
         setSelectedPart({ ...selectedPart, part_name: partName }); 
         
         try {
-            const resIn = await axios.get('http://127.0.0.1:8000/api/inspections/');
+            const resIn = await axios.get('https://zeni08.pythonanywhere.com/api/inspections/');
             const dataIn = resIn.data
                 .filter(i => i.part_name === partName && i.final_judgement === 'OK')
                 .map(i => ({
@@ -76,7 +76,7 @@ const Parts = () => {
                     user: i.inspector_name
                 }));
 
-            const resOut = await axios.get('http://127.0.0.1:8000/api/production/');
+            const resOut = await axios.get('https://zeni08.pythonanywhere.com/api/production/');
             const dataOut = resOut.data
                 .filter(i => i.part === partId || i.part_name === partName)
                 .map(i => ({
@@ -111,15 +111,15 @@ const Parts = () => {
     const handleSave = async (e) => {
         e.preventDefault();
         try {
-            if (editId) await axios.put(`http://127.0.0.1:8000/api/parts/${editId}/`, formData);
-            else await axios.post('http://127.0.0.1:8000/api/parts/', formData);
+            if (editId) await axios.put(`https://zeni08.pythonanywhere.com/api/parts/${editId}/`, formData);
+            else await axios.post('https://zeni08.pythonanywhere.com/api/parts/', formData);
             fetchData(); handleClose();
         } catch (error) { alert("Gagal menyimpan part."); }
     };
     
     const handleDelete = async (id) => {
         if (window.confirm("Hapus Part ini? Stok akan hilang.")) {
-            try { await axios.delete(`http://127.0.0.1:8000/api/parts/${id}/`); fetchData(); } catch (error) { alert("Gagal hapus part."); }
+            try { await axios.delete(`https://zeni08.pythonanywhere.com/api/parts/${id}/`); fetchData(); } catch (error) { alert("Gagal hapus part."); }
         }
     };
     

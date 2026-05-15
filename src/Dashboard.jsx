@@ -58,11 +58,11 @@ const Dashboard = () => {
 
     const fetchAllData = async () => {
         try {
-            const resInspections = await axios.get('http://127.0.0.1:8000/api/inspections/');
-            const resSchedule = await axios.get('http://127.0.0.1:8000/api/schedule/');
-            const resVendors = await axios.get('http://127.0.0.1:8000/api/vendors/');
-            const resParts = await axios.get('http://127.0.0.1:8000/api/parts/');
-            const resProd = await axios.get('http://127.0.0.1:8000/api/production/');
+            const resInspections = await axios.get('https://zeni08.pythonanywhere.com/api/inspections/');
+            const resSchedule = await axios.get('https://zeni08.pythonanywhere.com/api/schedule/');
+            const resVendors = await axios.get('https://zeni08.pythonanywhere.com/api/vendors/');
+            const resParts = await axios.get('https://zeni08.pythonanywhere.com/api/parts/');
+            const resProd = await axios.get('https://zeni08.pythonanywhere.com/api/production/');
 
             setAllInspections(resInspections.data);
             setAllSchedules(resSchedule.data);

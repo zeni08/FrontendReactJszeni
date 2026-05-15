@@ -63,11 +63,11 @@ const Inspection = () => {
         }
 
         try {
-            await axios.post('http://127.0.0.1:8000/api/inspections/', formData, {
+            await axios.post('https://zeni08.pythonanywhere.com/api/inspections/', formData, {
                 headers: { 'Content-Type': 'multipart/form-data' } 
             });
             
-            await axios.patch(`http://127.0.0.1:8000/api/schedules/${scheduleId}/`, { status: 'COMPLETED' });
+            await axios.patch(`https://zeni08.pythonanywhere.com/api/schedules/${scheduleId}/`, { status: 'COMPLETED' });
 
             alert(`Inspeksi Selesai!\nInspector: ${username}\nStatus: ${qtyNG === 0 ? 'OK' : 'NG'}`);
             navigate('/qc-report');
