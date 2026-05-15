@@ -66,7 +66,7 @@ const Schedule = () => {
 
     const refreshData = async () => {
         try { 
-            const res = await axios.get('hhttps://zeni08.pythonanywhere.com/api/schedule/'); 
+            const res = await axios.get('https://zeni08.pythonanywhere.com/api/schedule/'); 
             const sorted = res.data.sort((a, b) => (a.status === 'SCHEDULED' ? -1 : 1));
             setSchedules(sorted); 
         } catch (error) { console.error(error); }
