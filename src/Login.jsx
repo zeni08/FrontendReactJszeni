@@ -39,26 +39,34 @@ const Login = () => {
             background: 'linear-gradient(135deg, #003399 0%, #0055cc 100%)', // Warna Biru Suzuki
             display: 'flex', 
             alignItems: 'center', 
-            justifyContent: 'center' 
+            justifyContent: 'center',
+            padding: '20px 10px' // Ditambahkan padding pelindung agar card tidak menempel ke batas layar atas-bawah HP pendek
         }}>
             <Container>
-                <Row className="justify-content-center">
-                    <Col md={5} lg={4}>
+                {/* Menambahkan w-100 m-0 agar eliminasi bug horizontal scroll bawaan row Bootstrap */}
+                <Row className="justify-content-center w-100 m-0">
+                    
+                    {/* Mengunci skala lebar box secara fleksibel dari HP terkecil hingga Laptop besar */}
+                    <Col xs={12} sm={9} md={6} lg={4} xl={4} className="p-0">
                         <Card className="border-0 shadow-lg rounded-4 overflow-hidden">
-                            <Card.Body className="p-5">
+                            
+                            {/* Mengubah p-5 statis menjadi fluid responsive padding (p-4 di HP, p-md-5 di laptop) */}
+                            <Card.Body className="p-4 p-md-5">
+                                
                                 {/* LOGO SUZUKI */}
                                 <div className="text-center mb-4">
                                     <img 
                                         src="/logo.png" 
                                         alt="Suzuki Logo" 
-                                        style={{ maxWidth: '140px', marginBottom: '10px' }} 
+                                        style={{ maxWidth: '130px', width: '100%', marginBottom: '10px' }} 
                                     />
-                                    <h5 className="text-muted fw-bold mt-2">Warehouse System</h5>
-                                    <p className="text-muted small">Silakan login untuk masuk</p>
+                                    {/* Responsive text size dengan fs-6 di HP dan fs-md-5 di PC */}
+                                    <h5 className="text-muted fw-bold mt-2 fs-6 fs-md-5">Warehouse System</h5>
+                                    <p className="text-muted small mb-0">Silakan login untuk masuk</p>
                                 </div>
 
                                 {error && (
-                                    <Alert variant="danger" className="text-center py-2 text-small">
+                                    <Alert variant="danger" className="text-center py-2 small">
                                         ⚠️ {error}
                                     </Alert>
                                 )}
@@ -72,7 +80,7 @@ const Login = () => {
                                             value={username} 
                                             onChange={(e) => setUsername(e.target.value)} 
                                             required 
-                                            className="py-2 bg-light border-0"
+                                            className="py-2 bg-light border-0 text-dark shadow-none"
                                             autoFocus
                                         />
                                     </Form.Group>
@@ -85,15 +93,16 @@ const Login = () => {
                                             value={password} 
                                             onChange={(e) => setPassword(e.target.value)} 
                                             required 
-                                            className="py-2 bg-light border-0"
+                                            className="py-2 bg-light border-0 text-dark shadow-none"
                                         />
                                     </Form.Group>
 
+                                    {/* Ukuran padding vertikal tombol disesuaikan menjadi py-2.5 agar tebal dan kokoh di mobile screen */}
                                     <Button 
                                         variant="primary" 
                                         type="submit" 
-                                        className="w-100 py-2 fw-bold shadow-sm"
-                                        style={{ backgroundColor: '#e30613', borderColor: '#e30613' }} // Merah Suzuki
+                                        className="w-100 py-2.5 fw-bold shadow-sm border-0 fs-6 animate__animated animate__pulse"
+                                        style={{ backgroundColor: '#e30613' }} // Merah Suzuki
                                         disabled={loading}
                                     >
                                         {loading ? (
@@ -107,7 +116,7 @@ const Login = () => {
                                 </Form>
                             </Card.Body>
                             <Card.Footer className="text-center bg-light py-3 border-0">
-                                <small className="text-muted">
+                                <small className="text-muted" style={{ fontSize: '11px', dBlock: 'true' }}>
                                     &copy; 2026 PT Suzuki Indomobil Motor<br/>
                                     IT Dept - Warehouse Division
                                 </small>

@@ -99,7 +99,6 @@ const Schedule = () => {
         e.preventDefault();
         if (parseInt(formData.plan_qty) % 60 !== 0) return alert("Gagal: Qty harus kelipatan 60!");
         
-        // Buat objek payload bersih untuk dikirim ke backend (hanya ID)
         const payload = {
             vendor: formData.vendor,
             part: formData.part,
@@ -130,23 +129,18 @@ const Schedule = () => {
         }
     };
 
-    // UPDATE: Fungsi Scan dengan FeedBack Nama Part & Vendor (Poka-Yoke)
     const handleScan = (e) => {
         const code = e.target.value;
         setScanInput(code);
-        
-        // Cari part berdasarkan part_number hasil scan
         const foundPart = parts.find(p => p.part_number.toLowerCase() === code.toLowerCase());
-        
         if (foundPart) {
             setFormData(prev => ({ 
                 ...prev, 
                 part: foundPart.id, 
                 part_name: foundPart.part_name,
-                vendor: foundPart.vendor.id || foundPart.vendor, // Menangani jika vendor berupa objek atau ID
+                vendor: foundPart.vendor.id || foundPart.vendor,
                 vendor_name: foundPart.vendor_name || (foundPart.vendor && foundPart.vendor.name) || 'Vendor Terdeteksi'
             }));
-            // Berikan sedikit delay lalu kosongkan input scan agar siap scan DO atau part lain
             setTimeout(() => setScanInput(''), 1000);
         }
     };
@@ -180,7 +174,18 @@ const Schedule = () => {
 
     return (
         <div style={{ minHeight: '100vh', backgroundColor: '#f4f6f9' }}>
-            <style>{`@media (max-width: 768px) { .desktop-sidebar { display: none !important; } .mobile-header { display: block !important; } .main-content { margin-left: 0 !important; margin-top: 60px; } } @media (min-width: 769px) { .desktop-sidebar { display: block !important; } .mobile-header { display: none !important; } .main-content { margin-left: 250px !important; margin-top: 0; } }`}</style>
+            <style>{`
+                @media (max-width: 768px) { 
+                    .desktop-sidebar { display: none !important; } 
+                    .mobile-header { display: block !important; } 
+                    .main-content { margin-left: 0 !important; margin-top: 60px; } 
+                } 
+                @media (min-width: 769px) { 
+                    .desktop-sidebar { display: block !important; } 
+                    .mobile-header { display: none !important; } 
+                    .main-content { margin-left: 250px !important; margin-top: 0; } 
+                }
+            `}</style>
             
             <div className="desktop-sidebar bg-white border-end" style={{ width: '250px', minHeight: '100vh', position: 'fixed', zIndex: 1000 }}>
                 <div className="p-4 text-center border-bottom"><img src="/logo.png" alt="Suzuki" style={{ maxWidth: '120px' }} /></div>
@@ -214,7 +219,8 @@ const Schedule = () => {
                 </Card>
 
                 <Card className="border-0 shadow-sm overflow-hidden">
-                    <div className="table-responsive">
+                    {/* 🖥️ TAMPILAN LAPTOP / TABLET: Berupa Tabel Panjang Standar */}
+                    <div className="table-responsive d-none d-md-block">
                         <Table hover className="m-0 align-middle">
                             <thead className="bg-light text-secondary small text-nowrap">
                                 <tr><th>No</th><th>Waktu</th><th>Vendor</th><th>Part Info</th><th>Qty</th><th>Status</th><th>Aksi</th></tr>
@@ -238,6 +244,54 @@ const Schedule = () => {
                                 ))}
                             </tbody>
                         </Table>
+                    </div>
+
+                    {/* 📱 TAMPILAN HP: Berupa Susunan List Card Mewah */}
+                    <div className="d-block d-md-none">
+                        {filteredSchedules.length === 0 ? (
+                            <div className="p-4 text-center text-muted small">Tidak ada jadwal penerimaan.</div>
+                        ) : (
+                            filteredSchedules.map((item, idx) => (
+                                <div 
+                                    key={item.id} 
+                                    onClick={() => openDetailModal(item)} 
+                                    className="p-3 border-bottom position-relative"
+                                    style={{ cursor: 'pointer', backgroundColor: '#fff' }}
+                                >
+                                    <div className="d-flex justify-content-between align-items-start mb-2">
+                                        <div>
+                                            <span className="text-muted small fw-bold">#{idx + 1}</span>
+                                            <span className="text-muted small ms-2">📅 {item.schedule_date} (🕒 {item.schedule_time?.substring(0, 5)})</span>
+                                            <h6 className="fw-bold text-dark my-1">{item.vendor_name}</h6>
+                                        </div>
+                                        {item.status === 'COMPLETED' ? (
+                                            <Badge bg="success" pill>SELESAI</Badge>
+                                        ) : (
+                                            <Badge bg="warning" text="dark" pill>MENUNGGU</Badge>
+                                        )}
+                                    </div>
+                                    
+                                    <div className="mb-2 bg-light p-2 rounded">
+                                        <span className="text-primary fw-bold small">{item.part_name}</span>
+                                        <div className="text-muted small">PN: <Badge bg="secondary" className="fw-normal">{item.part_number}</Badge></div>
+                                    </div>
+
+                                    <div className="d-flex justify-content-between align-items-center mt-2">
+                                        <div>
+                                            <span className="text-muted small">Qty Plan:</span> <strong className="text-dark fs-6">{item.plan_qty} Pcs</strong>
+                                        </div>
+                                        <div className="d-flex gap-1" onClick={(e) => e.stopPropagation()}>
+                                            {item.status !== 'COMPLETED' && canProcessQC && (
+                                                <Button size="sm" variant="primary" className="fw-bold px-3" onClick={(e) => handleProcess(e, item.id)}>QC</Button>
+                                            )}
+                                            {canDelete && (
+                                                <Button size="sm" variant="outline-danger" onClick={(e) => handleDelete(e, item.id)}>🗑️</Button>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            ))
+                        )}
                     </div>
                 </Card>
             </div>
@@ -330,6 +384,7 @@ const Schedule = () => {
                 </Form>
             </Modal>
 
+            {/* MODAL DETAIL */}
             <Modal show={showDetail} onHide={() => setShowDetail(false)} centered>
                 <Modal.Header closeButton className="bg-primary text-white"><Modal.Title className="fs-6">📄 Detail Digital DO</Modal.Title></Modal.Header>
                 <Modal.Body className="p-4 text-center">

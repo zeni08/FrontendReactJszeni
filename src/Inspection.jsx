@@ -17,7 +17,7 @@ const Inspection = () => {
 
     useEffect(() => {
         if (scheduleId) {
-            axios.get(`http://127.0.0.1:8000/api/schedules/${scheduleId}/`)
+            axios.get(`https://zeni08.pythonanywhere.com/api/schedules/${scheduleId}/`)
                 .then(res => {
                     setSchedule(res.data);
                     setQtyNG(res.data.plan_qty); 
@@ -73,24 +73,27 @@ const Inspection = () => {
             navigate('/qc-report');
         } catch (error) {
             console.error(error);
-            alert("Gagal menyimpan inspeksi.");
+            alert("Gagal menyimpan inspection.");
         }
     };
 
     if (!schedule) return <div className="p-5 text-center">Loading Data...</div>;
 
     return (
-        <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '100vh', backgroundColor: '#f4f6f9' }}>
-            <Card style={{ width: '600px' }} className="shadow border-0">
+        // Ditambahkan padding responsive p-3 p-md-4 agar jarak pinggiran pas di HP & Desktop
+        <div className="d-flex justify-content-center align-items-center p-3 p-md-4" style={{ minHeight: '100vh', backgroundColor: '#f4f6f9' }}>
+            
+            {/* Mengubah width statis menjadi fluid responsive (width: 100%, max-width: 600px) */}
+            <Card style={{ width: '100%', maxWidth: '600px' }} className="shadow border-0">
                 <Card.Header className="bg-primary text-white fw-bold text-center py-3">
-                    <h4>FORM INSPEKSI QC</h4>
+                    <h4 className="mb-0 fs-5 fs-md-4">FORM INSPEKSI QC</h4>
                 </Card.Header>
-                <Card.Body className="p-4">
+                <Card.Body className="p-3 p-md-4">
                     
                     <div className="mb-4 text-center">
-                        <h5 className="fw-bold">{schedule.part_name}</h5>
-                        <p className="text-muted mb-1">{schedule.vendor_name}</p>
-                        <h2 className="fw-bold text-primary">{schedule.plan_qty} <span className="fs-6 text-muted">Pcs (Plan)</span></h2>
+                        <h5 className="fw-bold text-wrap">{schedule.part_name}</h5>
+                        <p className="text-muted mb-1 text-wrap">{schedule.vendor_name}</p>
+                        <h2 className="fw-bold text-primary fs-3 fs-md-2">{schedule.plan_qty} <span className="fs-6 text-muted fw-normal">Pcs (Plan)</span></h2>
                     </div>
 
                     <Form onSubmit={handleSubmit}>
@@ -107,8 +110,10 @@ const Inspection = () => {
                             <Form.Text className="text-muted small">*Otomatis terisi nama Anda.</Form.Text>
                         </Form.Group>
 
-                        <Row className="mb-3">
-                            <Col>
+                        {/* Diubah menjadi g-3 agar punya jarak renggang vertikal saat terbelah di HP */}
+                        <Row className="g-3 mb-3">
+                            {/* xs={12} = bertumpuk ke bawah di HP, sm={6} = berjejer horizontal di Laptop */}
+                            <Col xs={12} sm={6}>
                                 <Form.Label className="fw-bold text-success">QTY OK</Form.Label>
                                 <Form.Control 
                                     type="number" 
@@ -120,7 +125,7 @@ const Inspection = () => {
                                     className="text-center fw-bold fs-4 border-success"
                                 />
                             </Col>
-                            <Col>
+                            <Col xs={12} sm={6}>
                                 <Form.Label className="fw-bold text-danger">QTY NG</Form.Label>
                                 <Form.Control 
                                     type="number" 
@@ -132,7 +137,7 @@ const Inspection = () => {
                         </Row>
 
                         <Form.Group className="mb-3">
-                            <Form.Label>Keterangan / Deskripsi Defect</Form.Label>
+                            <Form.Label className="fw-bold">Keterangan / Deskripsi Defect</Form.Label>
                             <Form.Control 
                                 as="textarea" 
                                 rows={3} 
@@ -143,19 +148,20 @@ const Inspection = () => {
                         </Form.Group>
 
                         <Form.Group className="mb-4">
-                            <Form.Label>Upload Foto Defect (Jika ada NG)</Form.Label>
+                            <Form.Label className="fw-bold">Upload Foto Defect (Jika ada NG)</Form.Label>
                             <Form.Control 
                                 type="file" 
                                 accept="image/*"
                                 onChange={(e) => setPhoto(e.target.files[0])}
+                                className="small"
                             />
                         </Form.Group>
 
                         <div className="d-grid gap-2">
-                            <Button type="submit" variant="primary" size="lg" className="fw-bold">
+                            <Button type="submit" variant="primary" size="lg" className="fw-bold py-2.5 fs-6">
                                 SIMPAN HASIL QC
                             </Button>
-                            <Button variant="secondary" onClick={() => navigate('/schedule')}>
+                            <Button variant="secondary" className="py-2 fs-6" onClick={() => navigate('/schedule')}>
                                 Batal
                             </Button>
                         </div>

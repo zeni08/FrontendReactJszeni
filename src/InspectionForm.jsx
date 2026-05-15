@@ -38,10 +38,8 @@ const InspectionForm = () => {
 
     const fetchSchedule = async () => {
         try {
-            // Ambil data jadwal receiving berdasarkan ID
             const res = await axios.get(`https://zeni08.pythonanywhere.com/api/schedule/${id}/`);
             setSchedule(res.data);
-            // Isi default Qty OK dengan Plan Qty & Batch Number
             setFormData(prev => ({ 
                 ...prev, 
                 qty_ok: res.data.plan_qty, 
@@ -79,16 +77,13 @@ const InspectionForm = () => {
     };
 
     const handleFileChange = (e) => {
-        // Ambil file binary asli untuk dikirim lewat FormData
         setFormData({ ...formData, repair_photo: e.target.files[0] });
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         
-        // SIAPKAN DATA UNTUK DIKIRIM (Wajib FormData untuk binary/file)
         const sendData = new FormData();
-        // DISINKRONKAN: Gunakan 'receiving_schedule' sesuai Serializer Django
         sendData.append('receiving_schedule', id); 
         sendData.append('qty_check', schedule.plan_qty);
         sendData.append('qty_ok', formData.qty_ok);
@@ -99,24 +94,20 @@ const InspectionForm = () => {
         sendData.append('shift', formData.shift);
         sendData.append('work_station', formData.work_station);
         
-        // Kirim foto hanya jika ada file yang diunggah
         if (formData.repair_photo) {
             sendData.append('repair_photo', formData.repair_photo);
         }
 
         try {
-            // 1. SIMPAN HASIL QC KE DATABASE SUZUKI
             await axios.post('https://zeni08.pythonanywhere.com/api/inspections/', sendData, {
                 headers: { 'Content-Type': 'multipart/form-data' }
             });
 
-            // 2. UPDATE BATCH NUMBER & STATUS JADWAL
             await axios.patch(`https://zeni08.pythonanywhere.com/api/schedule/${id}/`, {
                 batch_number: formData.batch_number,
                 status: 'COMPLETED'
             });
 
-            // 3. UPDATE STOK PART (Hanya jika ada barang OK)
             if (formData.qty_ok > 0) {
                 const partRes = await axios.get(`https://zeni08.pythonanywhere.com/api/parts/${schedule.part}/`);
                 const currentStock = partRes.data.current_stock;
@@ -138,49 +129,54 @@ const InspectionForm = () => {
     if (loading) return <div className="text-center p-5">Loading Data Sistem Suzuki...</div>;
 
     return (
-        <Container className="py-5" style={{ maxWidth: '800px' }}>
-            <Card className="shadow border-0">
-                <Card.Header className="bg-primary text-white text-center py-3">
-                    <h4 className="mb-0 fw-bold">FORM INSPEKSI QC (INPUT)</h4>
-                    <small>PT Suzuki Indomobil Motor - Incoming Inspection</small>
+        // Ditambahkan padding p-2 p-md-5 agar pas dibuka di HP pinggirannya tidak terlalu mepet screen
+        <Container className="p-2 p-md-5" style={{ maxWidth: '800px' }}>
+            <Card className="shadow border-0 animate__animated animate__fadeIn">
+                <Card.Header className="bg-primary text-white text-center py-3 px-2">
+                    <h4 className="mb-0 fw-bold fs-5 fs-md-4">FORM INSPEKSI QC (INPUT)</h4>
+                    <small className="d-block mt-1 small">PT Suzuki Indomobil Motor - Incoming Inspection</small>
                 </Card.Header>
-                <Card.Body className="p-4">
+                <Card.Body className="p-3 p-md-4">
                     
-                    {/* INFO PART */}
-                    <div className="text-center mb-4">
-                        <h2 className="fw-bold text-dark">{schedule.part_name}</h2>
-                        <p className="text-muted mb-1">{schedule.part_number}</p>
-                        <Badge bg="info" className="fs-6">{schedule.vendor_name}</Badge>
+                    {/* INFO PART RESPONSIVE TEXT */}
+                    <div className="text-center mb-4 px-2">
+                        <h3 className="fw-bold text-dark fs-4 fs-md-2 text-wrap">{schedule.part_name}</h3>
+                        <p className="text-muted mb-2 small fw-mono">{schedule.part_number}</p>
+                        <Badge bg="info" className="fs-6 text-wrap max-w-100">{schedule.vendor_name}</Badge>
                     </div>
 
                     <Form onSubmit={handleSubmit}>
-                        <Row className="mb-3">
-                            {/* KOLOM KIRI: DATA INSPEKTOR */}
-                            <Col md={6}>
-                                <Card className="bg-light border-0 p-3 mb-3">
-                                    <h6 className="fw-bold text-primary">👷 Identitas Inspektor</h6>
+                        {/* Menggunakan g-3 agar saat kotak kiri & kanan menumpuk di HP, mereka ada jarak vertikal */}
+                        <Row className="g-3 mb-3">
+                            
+                            {/* KOLOM KIRI: DATA INSPEKTOR (xs=12 artinya full-width di HP, md=6 sejajar di laptop) */}
+                            <Col xs={12} md={6}>
+                                <Card className="bg-light border-0 p-3 h-100">
+                                    <h6 className="fw-bold text-primary mb-3">安全 👷 Identitas Inspektor</h6>
                                     <Form.Group className="mb-2">
-                                        <Form.Label>Nama Inspektor</Form.Label>
+                                        <Form.Label className="small fw-bold">Nama Inspektor</Form.Label>
                                         <Form.Control type="text" value={formData.inspector_name} readOnly className="fw-bold bg-white" />
                                     </Form.Group>
-                                    <Row>
-                                        <Col>
+                                    
+                                    {/* Memperbaiki baris dalam agar Shift dan Work Station terbelah vertikal saat di HP (xs={12}) */}
+                                    <Row className="g-2">
+                                        <Col xs={12} sm={5}>
                                             <Form.Group>
-                                                <Form.Label>Shift</Form.Label>
+                                                <Form.Label className="small fw-bold">Shift</Form.Label>
                                                 <Form.Select 
                                                     value={formData.shift} 
                                                     onChange={e => setFormData({...formData, shift: e.target.value})}
                                                     className="border-primary"
                                                 >
-                                                    <option value="1">Shift 1 (Pagi)</option>
-                                                    <option value="2">Shift 2 (Sore)</option>
-                                                    <option value="3">Shift 3 (Malam)</option>
+                                                    <option value="1">1 (Pagi)</option>
+                                                    <option value="2">2 (Sore)</option>
+                                                    <option value="3">3 (Malam)</option>
                                                 </Form.Select>
                                             </Form.Group>
                                         </Col>
-                                        <Col>
+                                        <Col xs={12} sm={7}>
                                             <Form.Group>
-                                                <Form.Label>Work Station</Form.Label>
+                                                <Form.Label className="small fw-bold">Work Station</Form.Label>
                                                 <Form.Control 
                                                     type="text" 
                                                     value={formData.work_station}
@@ -193,11 +189,11 @@ const InspectionForm = () => {
                             </Col>
 
                             {/* KOLOM KANAN: TRACEABILITY */}
-                            <Col md={6}>
-                                <Card className="bg-warning bg-opacity-10 border-warning p-3 mb-3">
-                                    <h6 className="fw-bold text-dark">📦 Traceability (Batch/Lot)</h6>
+                            <Col xs={12} md={6}>
+                                <Card className="bg-warning bg-opacity-10 border-warning p-3 h-100">
+                                    <h6 className="fw-bold text-dark mb-3">🎯 📦 Traceability (Batch/Lot)</h6>
                                     <Form.Group className="mb-2">
-                                        <Form.Label>Batch / Lot Number</Form.Label>
+                                        <Form.Label className="small fw-bold">Batch / Lot Number</Form.Label>
                                         <Form.Control 
                                             type="text" 
                                             placeholder="Scan / Input No. Batch" 
@@ -206,33 +202,35 @@ const InspectionForm = () => {
                                             className="fw-bold border-warning"
                                             required
                                         />
-                                        <Form.Text className="text-muted small">* Wajib sesuai standar IATF.</Form.Text>
+                                        <Form.Text className="text-muted small d-block mt-1">* Wajib sesuai standar IATF PT SIM.</Form.Text>
                                     </Form.Group>
                                 </Card>
                             </Col>
                         </Row>
 
-                        <hr />
+                        <hr className="my-4" />
 
-                        <h5 className="fw-bold mb-3">📊 Hasil Pemeriksaan</h5>
-                        <Row className="mb-3">
-                            <Col>
+                        <h5 className="fw-bold mb-3 fs-6 fs-md-5">📊 Hasil Pemeriksaan (Plan Qty: {schedule.plan_qty} Pcs)</h5>
+                        
+                        {/* Mengubah input QTY OK dan NG agar turun ke bawah di HP (xs={12}) dan sejajar di laptop (sm={6}) */}
+                        <Row className="g-3 mb-3">
+                            <Col xs={12} sm={6}>
                                 <Form.Group>
-                                    <Form.Label className="text-success fw-bold">QTY OK (Good)</Form.Label>
+                                    <Form.Label className="text-success fw-bold small">QTY OK (Good)</Form.Label>
                                     <Form.Control 
                                         type="number" 
-                                        className="text-success fw-bold fs-4 text-center border-success"
+                                        className="text-success fw-bold fs-4 text-center border-success py-2"
                                         value={formData.qty_ok}
                                         onChange={(e) => handleQtyChange('qty_ok', e.target.value)}
                                     />
                                 </Form.Group>
                             </Col>
-                            <Col>
+                            <Col xs={12} sm={6}>
                                 <Form.Group>
-                                    <Form.Label className="text-danger fw-bold">QTY NG (Defect)</Form.Label>
+                                    <Form.Label className="text-danger fw-bold small">QTY NG (Defect)</Form.Label>
                                     <Form.Control 
                                         type="number" 
-                                        className="text-danger fw-bold fs-4 text-center border-danger"
+                                        className="text-danger fw-bold fs-4 text-center border-danger py-2"
                                         value={formData.qty_ng}
                                         onChange={(e) => handleQtyChange('qty_ng', e.target.value)}
                                     />
@@ -240,12 +238,12 @@ const InspectionForm = () => {
                             </Col>
                         </Row>
 
-                        <Alert variant={formData.final_judgement === 'OK' ? 'success' : 'danger'} className="text-center fw-bold fs-5 shadow-sm">
+                        <Alert variant={formData.final_judgement === 'OK' ? 'success' : 'danger'} className="text-center fw-bold fs-5 shadow-sm py-2">
                             STATUS AKHIR: {formData.final_judgement}
                         </Alert>
 
                         <Form.Group className="mb-3">
-                            <Form.Label>Keterangan / Deskripsi Defect</Form.Label>
+                            <Form.Label className="small fw-bold">Keterangan / Deskripsi Defect</Form.Label>
                             <Form.Control 
                                 as="textarea" 
                                 rows={2} 
@@ -256,15 +254,16 @@ const InspectionForm = () => {
                         </Form.Group>
 
                         <Form.Group className="mb-4">
-                            <Form.Label className="fw-bold text-primary">📸 Upload Foto Bukti (Visual Evidence)</Form.Label>
-                            <Form.Control type="file" accept="image/*" onChange={handleFileChange} />
+                            <Form.Label className="fw-bold text-primary small">📸 Upload Foto Bukti (Visual Evidence)</Form.Label>
+                            <Form.Control type="file" accept="image/*" className="small" onChange={handleFileChange} />
                         </Form.Group>
 
+                        {/* Button menggunakan d-grid gap-2 agar full lebar di mobile, sangat nyaman disentuh jari */}
                         <div className="d-grid gap-2">
-                            <Button variant="primary" size="lg" type="submit" className="fw-bold shadow">
+                            <Button variant="primary" size="lg" type="submit" className="fw-bold shadow py-2.5 fs-6">
                                 💾 SIMPAN & UPDATE STOK
                             </Button>
-                            <Button variant="outline-secondary" onClick={() => navigate('/schedule')}>
+                            <Button variant="outline-secondary" className="py-2 fs-6" onClick={() => navigate('/schedule')}>
                                 Batal
                             </Button>
                         </div>
