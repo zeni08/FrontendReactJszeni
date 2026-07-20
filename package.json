@@ -13,6 +13,7 @@
     "axios": "^1.13.2",
     "bootstrap": "^5.3.8",
     "file-saver": "^2.0.5",
+    "html5-qrcode": "^2.3.8",
     "jspdf": "^4.2.1",
     "jspdf-autotable": "^5.0.7",
     "react": "^19.2.0",
