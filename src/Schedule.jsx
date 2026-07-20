@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, Table, Badge, Button, Modal, Form, Row, Col, InputGroup, FormControl, Navbar, Offcanvas, Alert } from 'react-bootstrap';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import { Html5QrcodeScanner } from 'html5-qrcode'; // TAMBAHAN: Import library scanner
 
 const Schedule = () => {
     const navigate = useNavigate();
@@ -31,6 +32,9 @@ const Schedule = () => {
     const [vendors, setVendors] = useState([]);
     const [parts, setParts] = useState([]);
     const [scanInput, setScanInput] = useState('');
+    
+    // TAMBAHAN: State untuk mengontrol kamera
+    const [isCameraOpen, setIsCameraOpen] = useState(false);
 
     const getTodayDate = () => {
         const now = new Date();
@@ -63,6 +67,41 @@ const Schedule = () => {
         }
         setFilteredSchedules(result);
     }, [searchTerm, filterStatus, schedules]);
+
+    // TAMBAHAN: Logika Lifecycle Scanner Kamera
+    useEffect(() => {
+        let scanner = null;
+        if (isCameraOpen) {
+            scanner = new Html5QrcodeScanner(
+                "reader", 
+                { 
+                    fps: 10, 
+                    qrbox: { width: 250, height: 150 }, 
+                    supportedScanTypes: [] 
+                }, 
+                false
+            );
+
+            scanner.render(
+                (decodedText) => {
+                    // Panggil handleScan bawaan dengan simulasi objek event (e.target.value)
+                    handleScan({ target: { value: decodedText } });
+                    setIsCameraOpen(false); // Otomatis tutup kamera setelah sukses scan
+                    scanner.clear();
+                },
+                (error) => {
+                    // Abaikan error saat kamera sedang mencari fokus barcode
+                }
+            );
+        }
+
+        // Cleanup scanner jika modal atau kamera ditutup
+        return () => {
+            if (scanner) {
+                scanner.clear().catch(console.error);
+            }
+        };
+    }, [isCameraOpen]);
 
     const refreshData = async () => {
         try { 
@@ -113,6 +152,7 @@ const Schedule = () => {
             await axios.post('https://zeni08.pythonanywhere.com/api/schedule/', payload);
             alert("✅ Jadwal Berhasil Disimpan!"); 
             setShowInput(false); 
+            setIsCameraOpen(false); // Pastikan kamera tertutup saat simpan
             refreshData(); 
             setFormData({ 
                 vendor: '', vendor_name: '', part: '', part_name: '', plan_qty: '', 
@@ -296,20 +336,39 @@ const Schedule = () => {
                 </Card>
             </div>
 
-            {/* MODAL INPUT DENGAN POKA-YOKE FEEDBACK */}
-            <Modal show={showInput} onHide={() => setShowInput(false)} centered>
+            {/* MODAL INPUT DENGAN POKA-YOKE FEEDBACK DAN KAMERA SCANNER */}
+            <Modal show={showInput} onHide={() => { setShowInput(false); setIsCameraOpen(false); }} centered>
                 <Modal.Header closeButton><Modal.Title>Input Jadwal</Modal.Title></Modal.Header>
                 <Form onSubmit={handleSave}>
                     <Modal.Body>
                         <div className="mb-3 p-3 bg-light border rounded small">
                             <Form.Label className="fw-bold text-primary">SCAN BARCODE 🔫</Form.Label>
-                            <Form.Control 
-                                type="text" 
-                                placeholder="Scan part number..." 
-                                value={scanInput} 
-                                onChange={handleScan}
-                                autoFocus 
-                            />
+                            
+                            {/* TAMBAHAN: Input box bersanding dengan tombol kamera */}
+                            <div className="d-flex gap-2">
+                                <Form.Control 
+                                    type="text" 
+                                    placeholder="Scan part number..." 
+                                    value={scanInput} 
+                                    onChange={handleScan}
+                                    autoFocus 
+                                />
+                                <Button 
+                                    variant={isCameraOpen ? "danger" : "primary"} 
+                                    className="fw-bold text-nowrap"
+                                    onClick={() => setIsCameraOpen(!isCameraOpen)}
+                                >
+                                    {isCameraOpen ? "Tutup 📷" : "Buka 📷"}
+                                </Button>
+                            </div>
+
+                            {/* TAMBAHAN: Area Render Kamera */}
+                            {isCameraOpen && (
+                                <div className="mt-3 text-center">
+                                    <div id="reader" className="w-100 overflow-hidden rounded border"></div>
+                                    <p className="text-muted small mt-2 mb-0">Arahkan kamera ke barcode komponen...</p>
+                                </div>
+                            )}
                         </div>
 
                         <Form.Group className="mb-3">
