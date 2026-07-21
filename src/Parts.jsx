@@ -35,6 +35,9 @@ const Parts = () => {
     const [stockHistory, setStockHistory] = useState([]);
     const [loadingHistory, setLoadingHistory] = useState(false);
 
+    // --- TAMBAHAN: STATE MODAL KONFIRMASI HAPUS GG WP ---
+    const [deleteModal, setDeleteModal] = useState({ show: false, item: null });
+
     useEffect(() => { fetchData(); }, []);
 
     const fetchData = async () => {
@@ -121,9 +124,19 @@ const Parts = () => {
         } catch (error) { alert("Gagal menyimpan part."); }
     };
     
-    const handleDelete = async (id) => {
-        if (window.confirm("Hapus Part ini? Stok akan hilang.")) {
-            try { await axios.delete(`https://zeni08.pythonanywhere.com/api/parts/${id}/`); fetchData(); } catch (error) { alert("Gagal hapus part."); }
+    // --- MODIFIKASI: LOGIKA HAPUS DENGAN MODAL GG WP ---
+    const confirmDelete = async () => {
+        const { item } = deleteModal;
+        if (item) {
+            try { 
+                await axios.delete(`https://zeni08.pythonanywhere.com/api/parts/${item.id}/`); 
+                setDeleteModal({ show: false, item: null }); // Tutup modal setelah sukses
+                fetchData(); 
+            } 
+            catch (error) { 
+                alert("Gagal hapus part."); 
+                setDeleteModal({ show: false, item: null });
+            }
         }
     };
     
@@ -260,7 +273,8 @@ const Parts = () => {
                                             {canEditDelete && (
                                                 <div className="d-flex gap-1">
                                                     <Button size="sm" variant="outline-primary" onClick={() => handleEdit(item)}>Edit</Button>
-                                                    <Button size="sm" variant="outline-danger" onClick={() => handleDelete(item.id)}>Hapus</Button>
+                                                    {/* --- MODIFIKASI: Tombol hapus memicu modal konfirmasi GG WP --- */}
+                                                    <Button size="sm" variant="outline-danger" onClick={() => setDeleteModal({ show: true, item })}>Hapus</Button>
                                                 </div>
                                             )}
                                         </td>
@@ -315,7 +329,8 @@ const Parts = () => {
                                         {canEditDelete && (
                                             <div className="d-flex gap-1">
                                                 <Button size="sm" variant="outline-primary" className="py-0 px-2" onClick={() => handleEdit(item)}>✏️</Button>
-                                                <Button size="sm" variant="outline-danger" className="py-0 px-2" onClick={() => handleDelete(item.id)}>🗑️</Button>
+                                                {/* --- MODIFIKASI: Tombol hapus memicu modal konfirmasi GG WP --- */}
+                                                <Button size="sm" variant="outline-danger" className="py-0 px-2" onClick={() => setDeleteModal({ show: true, item })}>🗑️</Button>
                                             </div>
                                         )}
                                     </div>
@@ -416,6 +431,42 @@ const Parts = () => {
                     )}
                 </Modal.Body>
                 <Modal.Footer className="py-1 px-2"><Button variant="secondary" size="sm" onClick={() => setShowHistory(false)}>Tutup Kartu Stok</Button></Modal.Footer>
+            </Modal>
+
+            {/* --- TAMBAHAN: MODAL KONFIRMASI HAPUS PART GG WP --- */}
+            <Modal show={deleteModal.show} onHide={() => setDeleteModal({ show: false, item: null })} centered>
+                <Modal.Header className="bg-danger text-white border-0">
+                    <Modal.Title className="fs-5 fw-bold w-100 text-center">
+                        ⚠️ Peringatan Keras!
+                    </Modal.Title>
+                </Modal.Header>
+                <Modal.Body className="text-center py-4 px-4">
+                    <h5 className="fw-bold mb-3 text-dark">
+                        Yakin ingin menghapus Part ini?
+                    </h5>
+                    <p className="text-danger fw-bold small mb-4 bg-danger bg-opacity-10 p-2 rounded">
+                        Tindakan ini akan menghilangkan seluruh stok part ini dari gudang secara permanen.
+                    </p>
+                    
+                    {deleteModal.item && (
+                        <div className="bg-light p-3 rounded border text-start shadow-sm mx-auto mb-2" style={{ maxWidth: '400px' }}>
+                            <div className="mb-2"><small className="text-muted">Part Name:</small><br/><strong className="fs-6 text-dark">{deleteModal.item.part_name}</strong></div>
+                            <div className="mb-2"><small className="text-muted">Part Number:</small><br/><strong className="text-dark font-mono">{deleteModal.item.part_number}</strong></div>
+                            <div className="mb-0">
+                                <small className="text-muted">Stok Hangus:</small><br/>
+                                <Badge bg="danger" className="fs-6 mt-1">{deleteModal.item.current_stock} Pcs</Badge>
+                            </div>
+                        </div>
+                    )}
+                </Modal.Body>
+                <Modal.Footer className="justify-content-center border-0 pb-4 pt-0 gap-2">
+                    <Button variant="outline-secondary" className="px-4 fw-bold rounded-pill" onClick={() => setDeleteModal({ show: false, item: null })}>
+                        Batal
+                    </Button>
+                    <Button variant="danger" className="px-4 fw-bold rounded-pill shadow-sm" onClick={confirmDelete}>
+                        Ya, Hapus & Hanguskan Stok!
+                    </Button>
+                </Modal.Footer>
             </Modal>
 
         </div>

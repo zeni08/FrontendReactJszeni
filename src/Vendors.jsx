@@ -25,6 +25,9 @@ const Vendors = () => {
     const [showDetail, setShowDetail] = useState(false);
     const [selectedVendor, setSelectedVendor] = useState(null);
 
+    // --- TAMBAHAN: STATE MODAL KONFIRMASI HAPUS GG WP ---
+    const [deleteModal, setDeleteModal] = useState({ show: false, item: null });
+
     useEffect(() => {
         fetchVendors();
     }, []);
@@ -50,10 +53,19 @@ const Vendors = () => {
         }
     };
 
-    const handleDelete = async (id) => {
-        if (window.confirm("Yakin hapus vendor ini?")) {
-            try { await axios.delete(`https://zeni08.pythonanywhere.com/api/vendors/${id}/`); fetchVendors(); }
-            catch (error) { alert("Gagal hapus vendor."); }
+    // --- MODIFIKASI: LOGIKA HAPUS DENGAN MODAL GG WP ---
+    const confirmDelete = async () => {
+        const { item } = deleteModal;
+        if (item) {
+            try { 
+                await axios.delete(`https://zeni08.pythonanywhere.com/api/vendors/${item.id}/`); 
+                setDeleteModal({ show: false, item: null }); // Tutup modal setelah sukses
+                fetchVendors(); 
+            }
+            catch (error) { 
+                alert("Gagal hapus vendor."); 
+                setDeleteModal({ show: false, item: null });
+            }
         }
     };
 
@@ -176,7 +188,8 @@ const Vendors = () => {
                                                 {canEditDelete && (
                                                     <>
                                                         <Button size="sm" variant="outline-primary" onClick={() => handleEdit(item)}>Edit</Button>
-                                                        <Button size="sm" variant="outline-danger" onClick={() => handleDelete(item.id)}>Hapus</Button>
+                                                        {/* --- MODIFIKASI: Tombol hapus memicu modal konfirmasi GG WP --- */}
+                                                        <Button size="sm" variant="outline-danger" onClick={() => setDeleteModal({ show: true, item })}>Hapus</Button>
                                                     </>
                                                 )}
                                                 {!canEditDelete && <Badge bg="light" text="dark" className="border">View Only</Badge>}
@@ -233,6 +246,40 @@ const Vendors = () => {
                     )}
                 </Modal.Body>
             </Modal>
+
+            {/* --- TAMBAHAN: MODAL KONFIRMASI HAPUS VENDOR GG WP --- */}
+            <Modal show={deleteModal.show} onHide={() => setDeleteModal({ show: false, item: null })} centered>
+                <Modal.Header className="bg-danger text-white border-0">
+                    <Modal.Title className="fs-5 fw-bold w-100 text-center">
+                        ⚠️ Konfirmasi Hapus Data
+                    </Modal.Title>
+                </Modal.Header>
+                <Modal.Body className="text-center py-4 px-4">
+                    <h5 className="fw-bold mb-3 text-dark">
+                        Yakin ingin menghapus vendor ini secara permanen?
+                    </h5>
+                    <p className="text-muted small mb-4">
+                        Tindakan ini tidak bisa dibatalkan dan dapat memengaruhi data Part yang terhubung.
+                    </p>
+                    
+                    {deleteModal.item && (
+                        <div className="bg-light p-3 rounded border text-start shadow-sm mx-auto mb-2" style={{ maxWidth: '400px' }}>
+                            <div className="mb-2"><small className="text-muted">Nama Vendor:</small><br/><strong className="fs-6 text-dark">{deleteModal.item.name}</strong></div>
+                            <div className="mb-2"><small className="text-muted">Kontak HP:</small><br/><strong className="text-dark">📞 {deleteModal.item.contact || '-'}</strong></div>
+                            <div className="mb-0"><small className="text-muted">Alamat:</small><br/><span className="small text-dark">{deleteModal.item.address || '-'}</span></div>
+                        </div>
+                    )}
+                </Modal.Body>
+                <Modal.Footer className="justify-content-center border-0 pb-4 pt-0 gap-2">
+                    <Button variant="outline-secondary" className="px-4 fw-bold rounded-pill" onClick={() => setDeleteModal({ show: false, item: null })}>
+                        Batal
+                    </Button>
+                    <Button variant="danger" className="px-4 fw-bold rounded-pill shadow-sm" onClick={confirmDelete}>
+                        Ya, Hapus Permanen!
+                    </Button>
+                </Modal.Footer>
+            </Modal>
+
         </div>
     );
 };
