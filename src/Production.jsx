@@ -6,7 +6,7 @@ import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { saveAs } from 'file-saver';
-import { Html5QrcodeScanner } from 'html5-qrcode'; // TAMBAHAN: Import library scanner
+import { Html5QrcodeScanner } from 'html5-qrcode';
 
 const Production = () => {
     const navigate = useNavigate();
@@ -31,6 +31,9 @@ const Production = () => {
     // STATE MODAL DETAIL
     const [showDetail, setShowDetail] = useState(false);
     const [selectedRequest, setSelectedRequest] = useState(null);
+
+    // --- TAMBAHAN: STATE MODAL KONFIRMASI APPROVAL GG WP ---
+    const [confirmModal, setConfirmModal] = useState({ show: false, item: null, newStatus: '' });
 
     // STATE ERROR VALIDASI
     const [qtyError, setQtyError] = useState(""); 
@@ -81,7 +84,6 @@ const Production = () => {
     const fetchData = async () => {
         try {
             const resReq = await axios.get('https://zeni08.pythonanywhere.com/api/production/');
-            // FIXED BUG: Mengoreksi typo hhttps menjadi https agar data parts berhasil dimuat
             const resPart = await axios.get('https://zeni08.pythonanywhere.com/api/parts/');
             
             // Sort data terbaru di atas
@@ -135,33 +137,34 @@ const Production = () => {
         }
     };
 
-    // --- LOGIKA APPROVAL ---
-    const handleApproval = async (item, newStatus) => {
-        if (window.confirm(`Yakin ingin ${newStatus === 'APPROVED' ? 'MENYETUJUI' : 'MENOLAK'} permintaan ini?`)) {
-            try {
-                // 1. Update Status ke Database
-                await axios.patch(`https://zeni08.pythonanywhere.com/api/production/${item.id}/`, { 
-                    status: newStatus 
-                });
+    // --- MODIFIKASI: LOGIKA APPROVAL (Memakai state confirmModal) ---
+    const processApproval = async () => {
+        const { item, newStatus } = confirmModal;
+        try {
+            // 1. Update Status ke Database
+            await axios.patch(`https://zeni08.pythonanywhere.com/api/production/${item.id}/`, { 
+                status: newStatus 
+            });
 
-                // 2. JIKA APPROVED, kurangi stok
-                if (newStatus === 'APPROVED') {
-                    const partData = parts.find(p => p.id === item.part);
-                    if (partData) {
-                        const sisaStok = partData.current_stock - item.qty_request;
-                        await axios.patch(`https://zeni08.pythonanywhere.com/api/parts/${item.part}/`, { 
-                            current_stock: sisaStok 
-                        });
-                    }
+            // 2. JIKA APPROVED, kurangi stok
+            if (newStatus === 'APPROVED') {
+                const partData = parts.find(p => p.id === item.part);
+                if (partData) {
+                    const sisaStok = partData.current_stock - item.qty_request;
+                    await axios.patch(`https://zeni08.pythonanywhere.com/api/parts/${item.part}/`, { 
+                        current_stock: sisaStok 
+                    });
                 }
-
-                alert(`✅ Permintaan Berhasil di-${newStatus}!`);
-                await fetchData(); 
-
-            } catch (error) { 
-                console.error("Error Detail:", error.response?.data);
-                alert("Gagal memproses approval. Cek apakah kolom 'status' sudah ada di database."); 
             }
+
+            alert(`✅ Permintaan Berhasil di-${newStatus}!`);
+            setConfirmModal({ show: false, item: null, newStatus: '' }); // Tutup modal GG WP
+            await fetchData(); 
+
+        } catch (error) { 
+            console.error("Error Detail:", error.response?.data);
+            alert("Gagal memproses approval. Cek apakah kolom 'status' sudah ada di database."); 
+            setConfirmModal({ show: false, item: null, newStatus: '' });
         }
     };
 
@@ -382,7 +385,6 @@ const Production = () => {
 
             {/* MAIN CONTAINER CONTENT */}
             <div className="main-content p-3 p-md-4 flex-grow-1">
-                {/* Diubah menjadi flex-column di HP agar tombol tidak tabrakan atau keluar layar */}
                 <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-3 mb-md-4 gap-3">
                     <div>
                         <h3 className="fw-bold text-dark mb-0 fs-4 fs-md-3">Production Request</h3>
@@ -484,8 +486,9 @@ const Production = () => {
                                             <td onClick={e => e.stopPropagation()} className="text-center">
                                                 {canApprove && (item.status?.toUpperCase() === 'PENDING' || !item.status) ? (
                                                     <div className="d-flex gap-2 justify-content-center">
-                                                        <Button size="sm" variant="success" className="fw-bold" onClick={() => handleApproval(item, 'APPROVED')}>✔ Setuju</Button>
-                                                        <Button size="sm" variant="danger" className="fw-bold" onClick={() => handleApproval(item, 'REJECTED')}>✘ Tolak</Button>
+                                                        {/* --- MODIFIKASI: Tombol memicu modal GG WP, bukan window.confirm --- */}
+                                                        <Button size="sm" variant="success" className="fw-bold" onClick={() => setConfirmModal({ show: true, item, newStatus: 'APPROVED' })}>✔ Setuju</Button>
+                                                        <Button size="sm" variant="danger" className="fw-bold" onClick={() => setConfirmModal({ show: true, item, newStatus: 'REJECTED' })}>✘ Tolak</Button>
                                                     </div>
                                                 ) : (
                                                     <span className="text-muted small">Selesai</span>
@@ -534,8 +537,9 @@ const Production = () => {
                                             )}
                                             {canApprove && (item.status?.toUpperCase() === 'PENDING' || !item.status) && (
                                                 <>
-                                                    <Button size="sm" variant="success" className="fw-bold py-0 px-2" onClick={() => handleApproval(item, 'APPROVED')}>✔</Button>
-                                                    <Button size="sm" variant="danger" className="fw-bold py-0 px-2" onClick={() => handleApproval(item, 'REJECTED')}>✘</Button>
+                                                    {/* --- MODIFIKASI: Tombol memicu modal GG WP, bukan window.confirm --- */}
+                                                    <Button size="sm" variant="success" className="fw-bold py-0 px-2" onClick={() => setConfirmModal({ show: true, item, newStatus: 'APPROVED' })}>✔</Button>
+                                                    <Button size="sm" variant="danger" className="fw-bold py-0 px-2" onClick={() => setConfirmModal({ show: true, item, newStatus: 'REJECTED' })}>✘</Button>
                                                 </>
                                             )}
                                         </div>
@@ -555,7 +559,7 @@ const Production = () => {
                 <Form onSubmit={handleSave}>
                     <Modal.Body className="small">
 
-                        {/* --- MODIFIKASI: BAGIAN SCANNER KAMERA --- */}
+                        {/* BAGIAN SCANNER KAMERA */}
                         <div className="mb-3 p-3 bg-light border rounded small">
                             <Form.Label className="fw-bold text-primary">SCAN BARCODE PART 🔫</Form.Label>
                             <div className="d-flex gap-2">
@@ -586,7 +590,6 @@ const Production = () => {
                             <Col xs={12} sm={6}>
                                 <Form.Group className="mb-2">
                                     <Form.Label className="fw-bold mb-1">PIC Pengambil</Form.Label>
-                                    {/* --- MODIFIKASI: MENGUNCI INPUT PIC PENGAMBIL --- */}
                                     <Form.Control 
                                         type="text" 
                                         value={formData.pic} 
@@ -683,6 +686,43 @@ const Production = () => {
                     <Button variant="secondary" size="sm" onClick={() => setShowDetail(false)}>Tutup</Button>
                 </Modal.Footer>
             </Modal>
+
+            {/* --- TAMBAHAN: MODAL KONFIRMASI APPROVAL GG WP --- */}
+            <Modal show={confirmModal.show} onHide={() => setConfirmModal({ show: false, item: null, newStatus: '' })} centered>
+                <Modal.Header className={confirmModal.newStatus === 'APPROVED' ? 'bg-success text-white border-0' : 'bg-danger text-white border-0'}>
+                    <Modal.Title className="fs-5 fw-bold w-100 text-center">
+                        {confirmModal.newStatus === 'APPROVED' ? '✅ Konfirmasi Persetujuan' : '⛔ Konfirmasi Penolakan'}
+                    </Modal.Title>
+                </Modal.Header>
+                <Modal.Body className="text-center py-4 px-4">
+                    <h5 className="fw-bold mb-3 text-dark">
+                        Yakin ingin <span className={confirmModal.newStatus === 'APPROVED' ? 'text-success' : 'text-danger'}>
+                            {confirmModal.newStatus === 'APPROVED' ? 'MENYETUJUI' : 'MENOLAK'}
+                        </span> permintaan ini?
+                    </h5>
+                    
+                    {confirmModal.item && (
+                        <div className="bg-light p-3 rounded border text-start shadow-sm mx-auto mt-3" style={{ maxWidth: '400px' }}>
+                            <div className="mb-2"><small className="text-muted">Part Name:</small><br/><strong className="fs-6 text-dark">{confirmModal.item.part_name}</strong></div>
+                            <div className="mb-2"><small className="text-muted">Jumlah Diminta:</small><br/><Badge bg="danger" className="fs-6">-{confirmModal.item.qty_request} Pcs</Badge></div>
+                            <div className="mb-0"><small className="text-muted">Line Tujuan:</small><br/><strong className="text-dark">{confirmModal.item.line_name}</strong></div>
+                        </div>
+                    )}
+                </Modal.Body>
+                <Modal.Footer className="justify-content-center border-0 pb-4 pt-0 gap-2">
+                    <Button variant="outline-secondary" className="px-4 fw-bold rounded-pill" onClick={() => setConfirmModal({ show: false, item: null, newStatus: '' })}>
+                        Batal
+                    </Button>
+                    <Button 
+                        variant={confirmModal.newStatus === 'APPROVED' ? 'success' : 'danger'} 
+                        className="px-4 fw-bold rounded-pill shadow-sm" 
+                        onClick={processApproval}
+                    >
+                        {confirmModal.newStatus === 'APPROVED' ? 'Ya, Setujui Sekarang!' : 'Ya, Tolak Sekarang!'}
+                    </Button>
+                </Modal.Footer>
+            </Modal>
+
         </div>
     );
 };
