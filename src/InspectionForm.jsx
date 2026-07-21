@@ -152,7 +152,7 @@ const InspectionForm = () => {
                             {/* KOLOM KIRI: DATA INSPEKTOR (xs=12 artinya full-width di HP, md=6 sejajar di laptop) */}
                             <Col xs={12} md={6}>
                                 <Card className="bg-light border-0 p-3 h-100">
-                                    <h6 className="fw-bold text-primary mb-3">安全 👷 Identitas Inspektor</h6>
+                                    <h6 className="fw-bold text-primary mb-3">Identitas Inspektor</h6>
                                     <Form.Group className="mb-2">
                                         <Form.Label className="small fw-bold">Nama Inspektor</Form.Label>
                                         <Form.Control type="text" value={formData.inspector_name} readOnly className="fw-bold bg-white" />
