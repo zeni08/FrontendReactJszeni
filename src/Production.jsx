@@ -6,6 +6,7 @@ import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { saveAs } from 'file-saver';
+import { Html5QrcodeScanner } from 'html5-qrcode'; // TAMBAHAN: Import library scanner
 
 const Production = () => {
     const navigate = useNavigate();
@@ -38,6 +39,10 @@ const Production = () => {
     const [searchQuery, setSearchQuery] = useState("");
     const [startDate, setStartDate] = useState("");
     const [endDate, setEndDate] = useState("");
+
+    // --- STATE SCANNER KAMERA ---
+    const [scanInput, setScanInput] = useState('');
+    const [isCameraOpen, setIsCameraOpen] = useState(false);
 
     // --- FUNGSI WAKTU & TANGGAL ---
     const getTodayDate = () => {
@@ -83,6 +88,51 @@ const Production = () => {
             setRequests(resReq.data.sort((a, b) => b.id - a.id));
             setParts(resPart.data);
         } catch (error) { console.error(error); }
+    };
+
+    // --- LOGIKA LIFECYCLE KAMERA SCANNER ---
+    useEffect(() => {
+        let scanner = null;
+        if (isCameraOpen) {
+            scanner = new Html5QrcodeScanner(
+                "reader", 
+                { 
+                    fps: 10, 
+                    qrbox: { width: 250, height: 150 }, 
+                    supportedScanTypes: [] 
+                }, 
+                false
+            );
+
+            scanner.render(
+                (decodedText) => {
+                    handleScan({ target: { value: decodedText } });
+                    setIsCameraOpen(false); // Tutup kamera otomatis jika berhasil
+                    scanner.clear();
+                },
+                (error) => {
+                    // Abaikan error saat kamera mencari fokus
+                }
+            );
+        }
+
+        return () => {
+            if (scanner) {
+                scanner.clear().catch(console.error);
+            }
+        };
+    }, [isCameraOpen]);
+
+    // --- FUNGSI MENGOLAH HASIL SCAN ---
+    const handleScan = (e) => {
+        const code = e.target.value;
+        setScanInput(code);
+        const foundPart = parts.find(p => p.part_number.toLowerCase() === code.toLowerCase());
+        if (foundPart) {
+            setFormData(prev => ({ ...prev, part: foundPart.id }));
+            setSelectedPartStock(foundPart.current_stock);
+            setTimeout(() => setScanInput(''), 1000); // Bersihkan input teks setelah 1 detik
+        }
     };
 
     // --- LOGIKA APPROVAL ---
@@ -241,6 +291,7 @@ const Production = () => {
             
             alert("✅ Permintaan Berhasil Diajukan! Menunggu Approval Admin/Manager.");
             setShowAdd(false);
+            setIsCameraOpen(false); // Pastikan kamera tertutup
             fetchData();
             
             setFormData({ 
@@ -251,6 +302,7 @@ const Production = () => {
             });
             setSelectedPartStock(0);
             setQtyError("");
+            setScanInput("");
 
         } catch (error) {
             alert("Gagal Simpan. Cek koneksi backend.");
@@ -496,17 +548,52 @@ const Production = () => {
             </div>
 
             {/* MODAL INPUT RESPONSIVE GRID */}
-            <Modal show={showAdd} onHide={() => setShowAdd(false)} centered>
+            <Modal show={showAdd} onHide={() => { setShowAdd(false); setIsCameraOpen(false); }} centered>
                 <Modal.Header closeButton className="bg-danger text-white py-2 px-3">
                     <Modal.Title className="fs-6 fw-bold">Input Barang Keluar</Modal.Title>
                 </Modal.Header>
                 <Form onSubmit={handleSave}>
                     <Modal.Body className="small">
+
+                        {/* --- MODIFIKASI: BAGIAN SCANNER KAMERA --- */}
+                        <div className="mb-3 p-3 bg-light border rounded small">
+                            <Form.Label className="fw-bold text-primary">SCAN BARCODE PART 🔫</Form.Label>
+                            <div className="d-flex gap-2">
+                                <Form.Control 
+                                    type="text" 
+                                    placeholder="Scan part number..." 
+                                    value={scanInput} 
+                                    onChange={handleScan}
+                                    autoFocus 
+                                />
+                                <Button 
+                                    variant={isCameraOpen ? "danger" : "primary"} 
+                                    className="fw-bold text-nowrap"
+                                    onClick={() => setIsCameraOpen(!isCameraOpen)}
+                                >
+                                    {isCameraOpen ? "Tutup 📷" : "Buka 📷"}
+                                </Button>
+                            </div>
+                            {isCameraOpen && (
+                                <div className="mt-3 text-center">
+                                    <div id="reader" className="w-100 overflow-hidden rounded border"></div>
+                                    <p className="text-muted small mt-2 mb-0">Arahkan kamera ke barcode komponen...</p>
+                                </div>
+                            )}
+                        </div>
+
                         <Row className="g-2">
                             <Col xs={12} sm={6}>
                                 <Form.Group className="mb-2">
                                     <Form.Label className="fw-bold mb-1">PIC Pengambil</Form.Label>
-                                    <Form.Control type="text" value={formData.pic} onChange={e => setFormData({...formData, pic: e.target.value})} />
+                                    {/* --- MODIFIKASI: MENGUNCI INPUT PIC PENGAMBIL --- */}
+                                    <Form.Control 
+                                        type="text" 
+                                        value={formData.pic} 
+                                        readOnly 
+                                        disabled 
+                                        className="bg-light cursor-not-allowed text-secondary fw-bold" 
+                                    />
                                 </Form.Group>
                             </Col>
                             <Col xs={12} sm={6}>
@@ -576,14 +663,14 @@ const Production = () => {
                 <Modal.Body className="small">
                     {selectedRequest && (
                         <div className="p-2 text-center">
-                            <h1 className="display-4 text-danger fw-bold mb-0">-{selectedRequest.qty_request}</h1>
+                            <h1 className="display-4 text-danger fw-bold mb-0">-{(selectedRequest.qty_request || 0)}</h1>
                             <p className="text-muted mb-3 small">Pcs Keluar Produksi</p>
                             <Card className="bg-light border-0 p-3 text-start">
                                 <Table borderless size="sm" className="m-0 small">
                                     <tbody>
-                                        <tr><td className="text-muted" style={{ width: '35%' }}>Part Nama</td><td>: <strong>{selectedRequest.part_name}</strong></td></tr>
-                                        <tr><td className="text-muted">PIC Pengambil</td><td>: {selectedRequest.pic}</td></tr>
-                                        <tr><td className="text-muted">Line Tujuan</td><td>: <Badge bg="secondary" className="fw-normal">{selectedRequest.line_name}</Badge></td></tr>
+                                        <tr><td className="text-muted" style={{ width: '35%' }}>Part Nama</td><td>: <strong>{selectedRequest.part_name || '-'}</strong></td></tr>
+                                        <tr><td className="text-muted">PIC Pengambil</td><td>: {selectedRequest.pic || '-'}</td></tr>
+                                        <tr><td className="text-muted">Line Tujuan</td><td>: <Badge bg="secondary" className="fw-normal">{selectedRequest.line_name || '-'}</Badge></td></tr>
                                         <tr><td className="text-muted">Lot Out</td><td>: {selectedRequest.lot_number_out ? <Badge bg="dark" className="fw-normal">{selectedRequest.lot_number_out}</Badge> : '-'}</td></tr>
                                         <tr><td className="text-muted">Status Log</td><td>: <Badge bg={selectedRequest.status === 'APPROVED' ? 'success' : selectedRequest.status === 'REJECTED' ? 'danger' : 'warning'}>{selectedRequest.status || 'PENDING'}</Badge></td></tr>
                                     </tbody>
