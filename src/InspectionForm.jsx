@@ -155,7 +155,13 @@ const InspectionForm = () => {
                                     <h6 className="fw-bold text-primary mb-3">Identitas Inspektor</h6>
                                     <Form.Group className="mb-2">
                                         <Form.Label className="small fw-bold">Nama Inspektor</Form.Label>
-                                        <Form.Control type="text" value={formData.inspector_name} readOnly className="fw-bold bg-white" />
+                                        <Form.Control 
+                                            type="text" 
+                                            value={formData.inspector_name} 
+                                            readOnly 
+                                            disabled 
+                                            className="fw-bold bg-light cursor-not-allowed text-secondary" 
+                                        />
                                     </Form.Group>
                                     
                                     {/* Memperbaiki baris dalam agar Shift dan Work Station terbelah vertikal saat di HP (xs={12}) */}
