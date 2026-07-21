@@ -3,6 +3,7 @@ import { Card, Table, Button, Modal, Form, Badge, FormControl, Navbar, Offcanvas
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import Barcode from 'react-barcode';
+import { Html5QrcodeScanner } from 'html5-qrcode'; // TAMBAHAN: Import library scanner kamera
 
 const Parts = () => {
     const navigate = useNavigate();
@@ -35,8 +36,11 @@ const Parts = () => {
     const [stockHistory, setStockHistory] = useState([]);
     const [loadingHistory, setLoadingHistory] = useState(false);
 
-    // --- TAMBAHAN: STATE MODAL KONFIRMASI HAPUS GG WP ---
+    // STATE MODAL KONFIRMASI HAPUS
     const [deleteModal, setDeleteModal] = useState({ show: false, item: null });
+
+    // --- TAMBAHAN: STATE SCANNER KAMERA DI FORM PART ---
+    const [isPartCameraOpen, setIsPartCameraOpen] = useState(false);
 
     useEffect(() => { fetchData(); }, []);
 
@@ -48,6 +52,39 @@ const Parts = () => {
             setVendors(Array.isArray(resVendors.data) ? resVendors.data : []);
         } catch (error) { setParts([]); setVendors([]); }
     };
+
+    // --- TAMBAHAN: LOGIKA LIFECYCLE KAMERA SCANNER PART ---
+    useEffect(() => {
+        let scanner = null;
+        if (isPartCameraOpen) {
+            scanner = new Html5QrcodeScanner(
+                "part-reader", 
+                { 
+                    fps: 10, 
+                    qrbox: { width: 250, height: 150 }, 
+                    supportedScanTypes: [] 
+                }, 
+                false
+            );
+
+            scanner.render(
+                (decodedText) => {
+                    setFormData(prev => ({ ...prev, part_number: decodedText }));
+                    setIsPartCameraOpen(false); // Tutup kamera otomatis setelah sukses scan
+                    scanner.clear();
+                },
+                (error) => {
+                    // Abaikan error saat kamera mencari fokus
+                }
+            );
+        }
+
+        return () => {
+            if (scanner) {
+                scanner.clear().catch(console.error);
+            }
+        };
+    }, [isPartCameraOpen]);
 
     // --- KLIK PART (MUNCUL BARCODE) ---
     const handlePartClick = (item) => {
@@ -124,13 +161,12 @@ const Parts = () => {
         } catch (error) { alert("Gagal menyimpan part."); }
     };
     
-    // --- MODIFIKASI: LOGIKA HAPUS DENGAN MODAL GG WP ---
     const confirmDelete = async () => {
         const { item } = deleteModal;
         if (item) {
             try { 
                 await axios.delete(`https://zeni08.pythonanywhere.com/api/parts/${item.id}/`); 
-                setDeleteModal({ show: false, item: null }); // Tutup modal setelah sukses
+                setDeleteModal({ show: false, item: null }); 
                 fetchData(); 
             } 
             catch (error) { 
@@ -146,7 +182,13 @@ const Parts = () => {
         setShow(true);
     };
     
-    const handleClose = () => { setShow(false); setEditId(null); setFormData({ part_name: '', part_number: '', vendor: '', min_stock: 10, current_stock: 0 }); };
+    const handleClose = () => { 
+        setShow(false); 
+        setIsPartCameraOpen(false); // Pastikan kamera tertutup saat modal ditutup
+        setEditId(null); 
+        setFormData({ part_name: '', part_number: '', vendor: '', min_stock: 10, current_stock: 0 }); 
+    };
+
     const handleLogout = () => { localStorage.clear(); navigate('/'); };
     const filteredParts = parts.filter(p => (p.part_name || "").toLowerCase().includes(search.toLowerCase()) || (p.part_number || "").includes(search));
 
@@ -273,7 +315,6 @@ const Parts = () => {
                                             {canEditDelete && (
                                                 <div className="d-flex gap-1">
                                                     <Button size="sm" variant="outline-primary" onClick={() => handleEdit(item)}>Edit</Button>
-                                                    {/* --- MODIFIKASI: Tombol hapus memicu modal konfirmasi GG WP --- */}
                                                     <Button size="sm" variant="outline-danger" onClick={() => setDeleteModal({ show: true, item })}>Hapus</Button>
                                                 </div>
                                             )}
@@ -329,7 +370,6 @@ const Parts = () => {
                                         {canEditDelete && (
                                             <div className="d-flex gap-1">
                                                 <Button size="sm" variant="outline-primary" className="py-0 px-2" onClick={() => handleEdit(item)}>✏️</Button>
-                                                {/* --- MODIFIKASI: Tombol hapus memicu modal konfirmasi GG WP --- */}
                                                 <Button size="sm" variant="outline-danger" className="py-0 px-2" onClick={() => setDeleteModal({ show: true, item })}>🗑️</Button>
                                             </div>
                                         )}
@@ -341,21 +381,71 @@ const Parts = () => {
                 </Card>
             </div>
 
-            {/* MODAL 1: INPUT/EDIT RESPONSIVE FORM */}
+            {/* MODAL 1: INPUT/EDIT RESPONSIVE FORM DENGAN KAMERA SCANNER */}
             <Modal show={show} onHide={handleClose} centered>
                 <Modal.Header closeButton><Modal.Title className="fs-6 fw-bold">{editId ? '⚙️ Edit Data Part' : '⚙️ Tambah Part Baru'}</Modal.Title></Modal.Header>
                 <Form onSubmit={handleSave}>
                     <Modal.Body className="small">
-                        <Form.Group className="mb-3"><Form.Label className="fw-bold">Nama Part</Form.Label><Form.Control required type="text" value={formData.part_name} onChange={e => setFormData({...formData, part_name: e.target.value})} /></Form.Group>
-                        <Form.Group className="mb-3"><Form.Label className="fw-bold">Part Number (Barcode)</Form.Label><Form.Control required type="text" value={formData.part_number} onChange={e => setFormData({...formData, part_number: e.target.value})} /></Form.Group>
-                        <Form.Group className="mb-3"><Form.Label className="fw-bold">Vendor Supplier</Form.Label><Form.Select required value={formData.vendor} onChange={e => setFormData({...formData, vendor: e.target.value})}><option value="">-- Pilih Vendor --</option>{vendors.map(v => <option key={v.id} value={v.id}>{v.name}</option>)}</Form.Select></Form.Group>
+                        <Form.Group className="mb-3">
+                            <Form.Label className="fw-bold">Nama Part</Form.Label>
+                            <Form.Control required type="text" value={formData.part_name} onChange={e => setFormData({...formData, part_name: e.target.value})} />
+                        </Form.Group>
+
+                        {/* --- TAMBAHAN: TOMBOL DAN SCANNER KAMERA UNTUK PART NUMBER --- */}
+                        <Form.Group className="mb-3">
+                            <Form.Label className="fw-bold">Part Number (Barcode)</Form.Label>
+                            <div className="d-flex gap-2">
+                                <Form.Control 
+                                    required 
+                                    type="text" 
+                                    value={formData.part_number} 
+                                    onChange={e => setFormData({...formData, part_number: e.target.value})} 
+                                    placeholder="Scan atau ketik part number..."
+                                />
+                                <Button 
+                                    type="button"
+                                    variant={isPartCameraOpen ? "danger" : "primary"} 
+                                    className="fw-bold text-nowrap"
+                                    onClick={() => setIsPartCameraOpen(!isPartCameraOpen)}
+                                >
+                                    {isPartCameraOpen ? "Tutup 📷" : "Buka 📷"}
+                                </Button>
+                            </div>
+                            {isPartCameraOpen && (
+                                <div className="mt-3 text-center">
+                                    <div id="part-reader" className="w-100 overflow-hidden rounded border"></div>
+                                    <p className="text-muted small mt-2 mb-0">Arahkan kamera ke barcode part number...</p>
+                                </div>
+                            )}
+                        </Form.Group>
+
+                        <Form.Group className="mb-3">
+                            <Form.Label className="fw-bold">Vendor Supplier</Form.Label>
+                            <Form.Select required value={formData.vendor} onChange={e => setFormData({...formData, vendor: e.target.value})}>
+                                <option value="">-- Pilih Vendor --</option>
+                                {vendors.map(v => <option key={v.id} value={v.id}>{v.name}</option>)}
+                            </Form.Select>
+                        </Form.Group>
                         
                         <Row className="g-2">
-                            <Col xs={12} sm={6}><Form.Group className="mb-3"><Form.Label className="fw-bold text-danger">Min. Stock Alert</Form.Label><Form.Control type="number" value={formData.min_stock} onChange={e => setFormData({...formData, min_stock: e.target.value})} /></Form.Group></Col>
-                            <Col xs={12} sm={6}><Form.Group className="mb-3"><Form.Label className="fw-bold text-primary">Initial Stock</Form.Label><Form.Control type="number" value={formData.current_stock} onChange={e => setFormData({...formData, current_stock: e.target.value})} /></Form.Group></Col>
+                            <Col xs={12} sm={6}>
+                                <Form.Group className="mb-3">
+                                    <Form.Label className="fw-bold text-danger">Min. Stock Alert</Form.Label>
+                                    <Form.Control type="number" value={formData.min_stock} onChange={e => setFormData({...formData, min_stock: e.target.value})} />
+                                </Form.Group>
+                            </Col>
+                            <Col xs={12} sm={6}>
+                                <Form.Group className="mb-3">
+                                    <Form.Label className="fw-bold text-primary">Initial Stock</Form.Label>
+                                    <Form.Control type="number" value={formData.current_stock} onChange={e => setFormData({...formData, current_stock: e.target.value})} />
+                                </Form.Group>
+                            </Col>
                         </Row>
                     </Modal.Body>
-                    <Modal.Footer><Button variant="secondary" size="sm" onClick={handleClose}>Batal</Button><Button variant="primary" size="sm" type="submit">Simpan Data</Button></Modal.Footer>
+                    <Modal.Footer>
+                        <Button variant="secondary" size="sm" onClick={handleClose}>Batal</Button>
+                        <Button variant="primary" size="sm" type="submit">Simpan Data</Button>
+                    </Modal.Footer>
                 </Form>
             </Modal>
 
@@ -433,7 +523,7 @@ const Parts = () => {
                 <Modal.Footer className="py-1 px-2"><Button variant="secondary" size="sm" onClick={() => setShowHistory(false)}>Tutup Kartu Stok</Button></Modal.Footer>
             </Modal>
 
-            {/* --- TAMBAHAN: MODAL KONFIRMASI HAPUS PART GG WP --- */}
+            {/* MODAL KONFIRMASI HAPUS PART GG WP */}
             <Modal show={deleteModal.show} onHide={() => setDeleteModal({ show: false, item: null })} centered>
                 <Modal.Header className="bg-danger text-white border-0">
                     <Modal.Title className="fs-5 fw-bold w-100 text-center">
