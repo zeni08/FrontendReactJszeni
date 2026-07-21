@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, Table, Badge, Button, Modal, Form, Row, Col, InputGroup, FormControl, Navbar, Offcanvas, Alert } from 'react-bootstrap';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
-import { Html5QrcodeScanner } from 'html5-qrcode'; // TAMBAHAN: Import library scanner
+import { Html5QrcodeScanner } from 'html5-qrcode';
 
 const Schedule = () => {
     const navigate = useNavigate();
@@ -28,12 +28,15 @@ const Schedule = () => {
     const [showDetail, setShowDetail] = useState(false);
     const [selectedItem, setSelectedItem] = useState(null);
 
+    // --- TAMBAHAN: STATE MODAL KONFIRMASI HAPUS GG WP ---
+    const [deleteModal, setDeleteModal] = useState({ show: false, item: null });
+
     // DROPDOWN DATA
     const [vendors, setVendors] = useState([]);
     const [parts, setParts] = useState([]);
     const [scanInput, setScanInput] = useState('');
     
-    // TAMBAHAN: State untuk mengontrol kamera
+    // STATE SCANNER KAMERA
     const [isCameraOpen, setIsCameraOpen] = useState(false);
 
     const getTodayDate = () => {
@@ -68,7 +71,7 @@ const Schedule = () => {
         setFilteredSchedules(result);
     }, [searchTerm, filterStatus, schedules]);
 
-    // TAMBAHAN: Logika Lifecycle Scanner Kamera
+    // LOGIKA LIFECYCLE SCANNER KAMERA
     useEffect(() => {
         let scanner = null;
         if (isCameraOpen) {
@@ -84,7 +87,6 @@ const Schedule = () => {
 
             scanner.render(
                 (decodedText) => {
-                    // Panggil handleScan bawaan dengan simulasi objek event (e.target.value)
                     handleScan({ target: { value: decodedText } });
                     setIsCameraOpen(false); // Otomatis tutup kamera setelah sukses scan
                     scanner.clear();
@@ -95,7 +97,6 @@ const Schedule = () => {
             );
         }
 
-        // Cleanup scanner jika modal atau kamera ditutup
         return () => {
             if (scanner) {
                 scanner.clear().catch(console.error);
@@ -162,10 +163,23 @@ const Schedule = () => {
         } catch (error) { alert("Gagal Simpan! Pastikan semua data terisi."); }
     };
 
-    const handleDelete = async (e, id) => {
+    // --- MODIFIKASI: LOGIKA HAPUS DENGAN MODAL GG WP ---
+    const handleDeleteClick = (e, item) => {
         e.stopPropagation();
-        if (window.confirm("Hapus Jadwal?")) {
-            try { await axios.delete(`https://zeni08.pythonanywhere.com/api/schedule/${id}/`); refreshData(); } catch (e) { alert("Gagal Hapus"); }
+        setDeleteModal({ show: true, item });
+    };
+
+    const confirmDelete = async () => {
+        const { item } = deleteModal;
+        if (item) {
+            try { 
+                await axios.delete(`https://zeni08.pythonanywhere.com/api/schedule/${item.id}/`); 
+                setDeleteModal({ show: false, item: null });
+                refreshData(); 
+            } catch (e) { 
+                alert("Gagal Hapus"); 
+                setDeleteModal({ show: false, item: null });
+            }
         }
     };
 
@@ -277,7 +291,8 @@ const Schedule = () => {
                                         <td>
                                             <div className="d-flex gap-1">
                                                 {item.status !== 'COMPLETED' && canProcessQC && <Button size="sm" variant="primary" className="fw-bold" onClick={(e) => handleProcess(e, item.id)}>QC</Button>}
-                                                {canDelete && <Button size="sm" variant="outline-danger" onClick={(e) => handleDelete(e, item.id)}>🗑️</Button>}
+                                                {/* --- MODIFIKASI: Tombol Hapus memicu Modal --- */}
+                                                {canDelete && <Button size="sm" variant="outline-danger" onClick={(e) => handleDeleteClick(e, item)}>🗑️</Button>}
                                             </div>
                                         </td>
                                     </tr>
@@ -324,8 +339,9 @@ const Schedule = () => {
                                             {item.status !== 'COMPLETED' && canProcessQC && (
                                                 <Button size="sm" variant="primary" className="fw-bold px-3" onClick={(e) => handleProcess(e, item.id)}>QC</Button>
                                             )}
+                                            {/* --- MODIFIKASI: Tombol Hapus memicu Modal --- */}
                                             {canDelete && (
-                                                <Button size="sm" variant="outline-danger" onClick={(e) => handleDelete(e, item.id)}>🗑️</Button>
+                                                <Button size="sm" variant="outline-danger" onClick={(e) => handleDeleteClick(e, item)}>🗑️</Button>
                                             )}
                                         </div>
                                     </div>
@@ -344,7 +360,6 @@ const Schedule = () => {
                         <div className="mb-3 p-3 bg-light border rounded small">
                             <Form.Label className="fw-bold text-primary">SCAN BARCODE 🔫</Form.Label>
                             
-                            {/* TAMBAHAN: Input box bersanding dengan tombol kamera */}
                             <div className="d-flex gap-2">
                                 <Form.Control 
                                     type="text" 
@@ -362,7 +377,6 @@ const Schedule = () => {
                                 </Button>
                             </div>
 
-                            {/* TAMBAHAN: Area Render Kamera */}
                             {isCameraOpen && (
                                 <div className="mt-3 text-center">
                                     <div id="reader" className="w-100 overflow-hidden rounded border"></div>
@@ -471,6 +485,43 @@ const Schedule = () => {
                     <Button variant="secondary" onClick={() => setShowDetail(false)}>Tutup</Button>
                 </Modal.Footer>
             </Modal>
+
+            {/* --- TAMBAHAN: MODAL KONFIRMASI HAPUS JADWAL GG WP --- */}
+            <Modal show={deleteModal.show} onHide={() => setDeleteModal({ show: false, item: null })} centered>
+                <Modal.Header className="bg-danger text-white border-0">
+                    <Modal.Title className="fs-5 fw-bold w-100 text-center">
+                        ⚠️ Konfirmasi Hapus Jadwal
+                    </Modal.Title>
+                </Modal.Header>
+                <Modal.Body className="text-center py-4 px-4">
+                    <h5 className="fw-bold mb-3 text-dark">
+                        Yakin ingin menghapus jadwal penerimaan ini?
+                    </h5>
+                    <p className="text-muted small mb-4">
+                        Data jadwal yang dihapus tidak dapat dikembalikan.
+                    </p>
+                    
+                    {deleteModal.item && (
+                        <div className="bg-light p-3 rounded border text-start shadow-sm mx-auto mb-2" style={{ maxWidth: '400px' }}>
+                            <div className="mb-2"><small className="text-muted">Vendor:</small><br/><strong className="fs-6 text-dark">{deleteModal.item.vendor_name}</strong></div>
+                            <div className="mb-2"><small className="text-muted">Part:</small><br/><strong className="text-dark">{deleteModal.item.part_name} ({deleteModal.item.part_number})</strong></div>
+                            <div className="mb-0 d-flex justify-content-between">
+                                <div><small className="text-muted">Qty:</small><br/><Badge bg="info" text="dark" className="fs-6 mt-1">{deleteModal.item.plan_qty} Pcs</Badge></div>
+                                <div><small className="text-muted">Tanggal:</small><br/><span className="text-dark fw-bold">{deleteModal.item.schedule_date}</span></div>
+                            </div>
+                        </div>
+                    )}
+                </Modal.Body>
+                <Modal.Footer className="justify-content-center border-0 pb-4 pt-0 gap-2">
+                    <Button variant="outline-secondary" className="px-4 fw-bold rounded-pill" onClick={() => setDeleteModal({ show: false, item: null })}>
+                        Batal
+                    </Button>
+                    <Button variant="danger" className="px-4 fw-bold rounded-pill shadow-sm" onClick={confirmDelete}>
+                        Ya, Hapus Jadwal!
+                    </Button>
+                </Modal.Footer>
+            </Modal>
+
         </div>
     );
 };
